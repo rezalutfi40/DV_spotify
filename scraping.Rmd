@@ -1,0 +1,104 @@
+---
+title: "scraping"
+author: "Reza Lutfi Ismail"
+date: "5/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list = ls())
+```
+
+# Scraping
+## Import library
+
+```{r}
+library(lubridate)
+library(rvest)
+library(tidyverse)
+```
+
+## Seting-Up URL and HTML nodes
+
+```{r}
+url <- "https://spotifycharts.com/regional/id/daily/"
+```
+
+```{r}
+timevalues <- seq(as.Date("2017-01-01"), as.Date("2021-05-18"), by = "day")
+```
+
+```{r}
+concat.url <- function(x){
+  full_url <- paste0(url, x)
+  full_url
+}
+```
+
+```{r}
+finalurl <- concat.url(timevalues)
+
+head(finalurl)
+```
+
+```{r}
+rank <- read_html("https://spotifycharts.com/regional/id/daily/2017-01-01") %>% 
+  html_nodes('.chart-table-position') %>% 
+  html_text() %>% 
+  as.data.frame()
+
+track <- read_html("https://spotifycharts.com/regional/id/daily/2017-01-01") %>% 
+  html_nodes('strong') %>% 
+  html_text() %>% 
+  as.data.frame()
+
+artist <- read_html("https://spotifycharts.com/regional/id/daily/2017-01-01") %>% 
+  html_nodes('.chart-table-track span') %>% 
+  html_text() %>% 
+  as.data.frame()
+
+streams <- read_html("https://spotifycharts.com/regional/id/daily/2017-01-01") %>%
+  html_nodes('.chart-table-streams') %>% 
+  html_text() %>% 
+  as.data.frame() %>% 
+  slice(2:201)
+
+date <- read_html("https://spotifycharts.com/regional/id/daily/2017-01-01") %>% 
+  html_nodes('.responsive-select~ .responsive-select+ .responsive-select .responsive-select-value') %>% 
+  html_text() %>% 
+  as.data.frame()
+
+chart <- cbind(rank, track, artist, streams, date) %>% 
+  `colnames<-`(c("Rank", "Track", "Artist", "Streams", "Date")) %>% 
+  mutate(Rank = as.integer(Rank), 
+         Date = mdy(Date))
+```
+
+
+```{r}
+SpotifyScrape <- function(x){
+  page <- x
+  rank <- page %>% 
+    read_html() %>% 
+    html_nodes('.chart-table-position') %>% 
+    html_text() %>% 
+    as.data.frame()
+  
+  track <- page %>% 
+    read_html() %>% 
+    html_nodes('strong') %>% 
+    html_text() %>% 
+    as.data.frame()
+  
+  chart2 <- cbind(rank, track)
+  
+  names(chart2) <- c("Rank", "Track")
+  
+  chart2 <- as.tibble(chart)
+  
+  return(chart2)
+  
+}
+```
